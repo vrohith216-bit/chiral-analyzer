@@ -1,8 +1,13 @@
 import streamlit as st
 from rdkit import Chem
 from rdkit.Chem import AllChem, rdMolDescriptors
-from rdkit.Chem import Draw
-import io
+
+# Draw requires Cairo — handle gracefully if unavailable
+try:
+    from rdkit.Chem import Draw
+    HAS_DRAW = True
+except Exception:
+    HAS_DRAW = False
 
 # ── Page config ──
 st.set_page_config(
@@ -85,7 +90,26 @@ DEFAULT_SMILES = "CC1=C2C(=C(C=C1O)O)C(=O)C3=C(C2=O)C=C(C=C3O)O[C@H]4C[C@H](O)[C
 
 # ── Hero ──
 st.markdown('<div class="hero-title">🔬 ChiralSense</div>', unsafe_allow_html=True)
-st.markdown('<div class="hero-sub">Detect chiral centers & assign R/S configuration using RDKit</div>', unsafe_allow_html=True)
+st.markdown('<div class="hero-sub">Detect chiral centers &amp; assign R/S configuration using RDKit</div>', unsafe_allow_html=True)
+
+# ── Student Info ──
+st.markdown("""
+<div style="
+    background: linear-gradient(135deg, rgba(52,211,153,0.1), rgba(59,130,246,0.1));
+    border: 1px solid rgba(52,211,153,0.3);
+    border-radius: 12px;
+    padding: 18px 28px;
+    text-align: center;
+    margin: 10px 0 20px 0;
+">
+    <p style="margin:4px 0; font-size:1.1rem; font-weight:700; color:#e2e8f0;">
+        👤 NAME &nbsp;— &nbsp;ROHITH V
+    </p>
+    <p style="margin:4px 0; font-size:1rem; font-weight:600; color:#94a3b8;">
+        🎓 REGISTER NUMBER &nbsp;— &nbsp;RA2511026050047
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
 # ── Input ──
 smiles = st.text_area(
@@ -164,19 +188,22 @@ if analyze or smiles:
 
     with right:
         st.subheader("⚛ 2D Structure")
-        try:
-            # Highlight chiral atoms
-            highlight_atoms = [idx for idx, _ in chiral_centers]
-            img = Draw.MolToImage(
-                mol,
-                size=(400, 300),
-                highlightAtoms=highlight_atoms,
-                kekulize=True
-            )
-            st.image(img, use_container_width=True, caption="Chiral centers highlighted")
-        except Exception as e:
-            st.warning(f"Could not render molecule: {e}")
+        if HAS_DRAW:
+            try:
+                highlight_atoms = [idx for idx, _ in chiral_centers]
+                img = Draw.MolToImage(
+                    mol,
+                    size=(400, 300),
+                    highlightAtoms=highlight_atoms,
+                    kekulize=True
+                )
+                st.image(img, use_container_width=True, caption="Chiral centers highlighted")
+            except Exception as e:
+                st.warning(f"Could not render molecule: {e}")
+        else:
+            st.info("🖼️ Molecule visualization unavailable on this environment.\nAnalysis results are fully accurate above.")
 
     # ── Summary ──
     st.success(f"✅ Analysis complete — **{len(chiral_centers)} chiral centers** found in `{formula}`")
+
 
